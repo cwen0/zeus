@@ -19,8 +19,8 @@ class PrometheusAPI(object):
 
         try:
             response = requests.get(prometheus_url + self._range_query_api,
-                                params={'query': query.expr, 'start': query.start_time,
-                                        'end': query.end_time, 'step': query.step})
+                                    params={'query': query.expr, 'start': query.start_time,
+                                            'end': query.end_time, 'step': query.step})
             status = response.json()['status']
 
             if status == "error":

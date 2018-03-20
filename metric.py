@@ -14,7 +14,7 @@ QUERY_QPS_EXPR = "sum(rate(tidb_server_query_total[1m])) by (status)"
 
 
 class ZeusIsolationForest(object):
-    def __init__(self, query_expr, data_url, train_count=60, train_interval=30, predict_interval=60):
+    def __init__(self, query_expr, data_url, train_count=60, train_interval=60, predict_interval=60):
         self.query_expr = query_expr
         self.data_url = data_url
         self.train_count = train_count
@@ -34,8 +34,12 @@ class ZeusIsolationForest(object):
                           time.mktime(now.timetuple()), "15s")
             self.train_task(query)
             if index % 10 == 0:
-                self.df = self.df.append({"mean": random.randint(0, 20000),
-                                          "std": random.randint(0, 20000)}, ignore_index=True)
+                mean_value = float(random.randint(0, 5000))
+                std_value = float(random.randint(0, 10000))
+                df_one = {"mean": mean_value, "std": std_value}
+                self.df = self.df.append(df_one, ignore_index=True)
+
+                logger.info("append data to train df:{df_one}".format(df_one=df_one))
 
             time.sleep(self.train_interval)
         x_cols = ["mean", "std"]
@@ -61,7 +65,7 @@ class ZeusIsolationForest(object):
         while True:
             now = datetime.datetime.now()
             query = Query(self.query_expr,
-                          time.mktime((now - datetime.timedelta(minutes=10)).timetuple()),
+                          time.mktime((now - datetime.timedelta(minutes=5)).timetuple()),
                           time.mktime(now.timetuple()), "15s")
             if self.predict_task(query) == 1:
                 print("test OK")
