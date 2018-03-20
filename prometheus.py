@@ -10,7 +10,6 @@ RANGE_QUERY_API = "/api/v1/query_range"
 
 class PrometheusAPI(object):
     """Prometheus api client"""
-
     def __init__(self):
         self._query_api = QUERY_API
         self._range_query_api = RANGE_QUERY_API
