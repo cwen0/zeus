@@ -1,3 +1,3 @@
 # zeus
-A framework to analyze time series data and alert
+A simple framework to analyze time series data and alert
 
