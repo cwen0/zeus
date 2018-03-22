@@ -52,11 +52,3 @@ def write2csv(filename, model, ids, data_set):
         for data in data_set.values():
             writer.writerow([ids, data])
 
-
-
-
-
-
-
-
-

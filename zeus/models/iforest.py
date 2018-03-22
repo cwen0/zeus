@@ -88,4 +88,3 @@ class IForest(Model):
     def run(self):
         self.train()
         self.predict()
-
