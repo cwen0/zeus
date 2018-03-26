@@ -1,31 +1,75 @@
 # -*- coding: utf-8 -*-
+import tornado.web
+import tornado.gen
+import uuid
+import threading
+from libs.log import logger
+import json
+import models
 
-import argparse
-import sys
-from models.iforest import IForest
+HTTP_MISS_ARGS = 401
+HTTP_FAIL = 403
+HTTP_OK = 200
 
-QUERY_QPS_EXPR = "sum(rate(tidb_server_query_total[1m])) by (status)"
-
-
-def parse_args():
-    parser = argparse.ArgumentParser(description="metric warning")
-
-    parser.add_argument("--url", action="store_true", dest="data_url",
-                        default="http://40.125.162.12:36722", required=False)
-    args = parser.parse_args()
-    return args
+jobs = dict()
+lock = threading.Lock()
 
 
-def main():
-    args = parse_args()
-    kwargs = vars(args)
-    if kwargs["data_url"] == "":
-        print "Error: url is necessary"
-        sys.exit(1)
+class ModelHandler(tornado.web.RequestHandler):
+    @tornado.gen.coroutine
+    def run(self, job):
+        if job.model not in models.models:
+            raise ValueError("model: {model} is not supported"
+                             .format(model=job.model))
 
-    ilf = IForest(QUERY_QPS_EXPR, kwargs["data_url"])
-    ilf.run()
+        model = models.models[job.model]
+        runner = model(job)
+        with lock:
+            jobs[job.id] = runner
 
+        runner.run()
+
+
+class JobNewHandler(ModelHandler):
+    @tornado.web.asynchronous
+    def post(self):
+        data = json.loads(self.request.body)
+        try:
+            job = models.Job(str(uuid.uuid4()), data["data_source"],
+                data["model"], data["metrics"])
+        except KeyError as e:
+            self.finish({"code": HTTP_MISS_ARGS,
+                         "message": "miss args %s" % e.args[0]})
+
+        try:
+            logger.info("run new job:{job}"
+                        .format(job=dict(job)))
+            self.run(job)
+        except Exception as e:
+            logger.error("run job:{job} failed"
+                         .format(job=dict(job)))
+            self.finish({"code": HTTP_FAIL,
+                         "message": "run job:{job} failed"
+                        .format(job=dict(job))})
+        self.finish({"code": HTTP_OK,
+                     "message": "OK",
+                     "data": json.dump(dict(job))})
+
+
+# class JobDetailHandler(ModelHandler):
+#
+# class JobDeleteHandler(ModelHandler):
+#
+# class JobListHandler(ModelHandler):
+
+
+def make_app():
+    return tornado.web.Application([
+        (r"/api/v1/job/new", JobNewHandler),
+        # (r"/api/v1/job/detail", JobDetailHandler),
+        # (r"/api/v1/job/delete", JobDeleteHandler),
+        # (r"/api/v1/jon/list", JobListHandler),
+    ])
 
 
 

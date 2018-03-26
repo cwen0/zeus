@@ -7,18 +7,20 @@ from data_model import DataModel
 # REQUEST_TIME = Summary('request_processing_seconds', 'Time spent processing request')
 QUERY_API = "/api/v1/query"
 RANGE_QUERY_API = "/api/v1/query_range"
+Metrics = {"qps": "sum(rate(tidb_server_query_total[1m])) by (status)"}
 
 
 class PrometheusAPI(DataModel):
     """Prometheus api client"""
-    def __init__(self):
+    def __init__(self, data_source):
         self._query_api = QUERY_API
         self._range_query_api = RANGE_QUERY_API
+        self.data_source = data_source
 
-    def query(self, data_source, query):
+    def query(self, query):
         data_set = dict()
 
-        response = requests.get(data_source.url + self._range_query_api,
+        response = requests.get(self.data_source.url + self._range_query_api,
                                 params={'query': query.expr, 'start': query.start_time,
                                         'end': query.end_time, 'step': query.step})
         status = response.json()['status']
