@@ -13,7 +13,7 @@ def get_logger():
     @summary: init logger
     @result: return a logger object
     """
-    logger_ = logging.getLogger("zeus")
+    logger_ = logging.getLogger()
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(formatter)
     logger_.addHandler(handler)

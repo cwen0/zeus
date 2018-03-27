@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from zeus.libs.log import logger
+from libs.log import logger
 
 
 class DataModel(object):
@@ -19,4 +19,7 @@ class DataSource(object):
 
     def __init__(self, url):
         self.url = url
+
+    def __iter__(self):
+        yield "url", self.url
 

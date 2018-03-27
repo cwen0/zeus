@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-from zeus.libs.log import logger
+from libs.log import logger
+from datasource.data_model import DataSource
+# import json
 
 
 class Model(object):
@@ -13,15 +15,21 @@ class Model(object):
 
 
 class Job(object):
-   """Job defines config for calculation job."""
-   def __init__(self, id, data_source, model, metrics):
-       self.id = id
-       self.data_source = data_source
-       self.model = model
-       self.metrics = metrics
+    """Job defines config for calculation job."""
+    def __init__(self, id, data_source,
+                 model, metrics, slack_channel):
+        self.id = id
+        self.data_source = DataSource(data_source["url"])
+        self.model = model
+        self.metrics = metrics
+        self.slack_channel = slack_channel
+    # def __init__(self, data):
+    #     self.__dict__ = json.loads(data)
 
-   def __iter__(self):
-       yield "id", self.id
-       yield "data_source", self.data_source
-       yield "model", self.model
-       yield "metrics", self.metrics
+    def __iter__(self):
+        yield "id", self.id
+        yield "data_source", dict(self.data_source)
+        yield "model", self.model
+        yield "metrics", self.metrics
+        yield "slack_channel", self.slack_channel
+        # return self.__dict__
