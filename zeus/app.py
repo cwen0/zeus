@@ -12,6 +12,9 @@ from functools import partial
 import signal
 from zeus import (
     JobNewHandler,
+    JobDeleteHandler,
+    JobListHandler,
+    JobDetailHandler
 )
 
 
@@ -19,7 +22,7 @@ define("config", default="../docs/app.conf", help="path to config file")
 define("port", default=2333, help="service port")
 define("slack_token", default="", help="slack token")
 
-MAX_WAIT_SECONDS_BEFORE_SHUTDOWN = 3
+MAX_WAIT_SECONDS_BEFORE_SHUTDOWN = 60
 
 
 def parse_config():
@@ -63,9 +66,9 @@ def sig_handler(server, sig, frame):
 def make_app():
     return tornado.web.Application([
         (r"/api/v1/job/new", JobNewHandler),
-        # (r"/api/v1/job/detail", JobDetailHandler),
-        # (r"/api/v1/job/delete", JobDeleteHandler),
-        # (r"/api/v1/jon/list", JobListHandler),
+        (r"/api/v1/job/detail/(?P<job_id>[\w+|\-]+)", JobDetailHandler),
+        (r"/api/v1/job/delete/(?P<job_id>[\w+|\-]+)", JobDeleteHandler),
+        (r"/api/v1/jobs/list", JobListHandler),
     ])
 
 
