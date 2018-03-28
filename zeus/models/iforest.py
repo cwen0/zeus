@@ -89,8 +89,8 @@ class IForest(Model):
             else:
                 logger.info("[job-id:{id}] Predict Error"
                             .format(id=sub_id(self.job.id)))
-                self.callback("[job-id] {id}, predict metrics error in last {time}s"
-                              .format(id=sub_id(self.job.id),
+                self.callback("[job] {job}, predict metrics error in last {time}s"
+                              .format(job=dict(self.job),
                                       time=self.predict_interval),
                               self.job.slack_channel)
 
