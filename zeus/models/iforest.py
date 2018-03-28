@@ -92,7 +92,7 @@ class IForest(Model):
                 self.callback("[job-id] {id}, predict metrics error in last {time}s"
                               .format(id=sub_id(self.job.id),
                                       time=self.predict_interval),
-                              job.slack_channel)
+                              self.job.slack_channel)
 
             self.event.wait(self.predict_interval)
         logger.info("[job-id:{id}] stop job"
