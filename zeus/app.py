@@ -68,8 +68,8 @@ def sig_handler(server, sig, frame):
 def make_app():
     return tornado.web.Application([
         (r"/api/v1/job/new", JobNewHandler),
-        (r"/api/v1/job/detail/(?P<job_id>[\w+|\-]+)", JobDetailHandler),
-        (r"/api/v1/job/delete/(?P<job_id>[\w+|\-]+)", JobDeleteHandler),
+        (r"/api/v1/job/(?P<job_id>[\w+|\-]+)/detail", JobDetailHandler),
+        (r"/api/v1/job/(?P<job_id>[\w+|\-]+)/delete", JobDeleteHandler),
         (r"/api/v1/jobs/list", JobListHandler),
     ])
 
