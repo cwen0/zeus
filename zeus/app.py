@@ -14,7 +14,8 @@ from zeus import (
     JobNewHandler,
     JobDeleteHandler,
     JobListHandler,
-    JobDetailHandler
+    JobDetailHandler,
+    ModelHandler
 )
 
 
@@ -22,7 +23,7 @@ define("config", default="../docs/app.conf", help="path to config file")
 define("port", default=2333, help="service port")
 define("slack_token", default="", help="slack token")
 
-MAX_WAIT_SECONDS_BEFORE_SHUTDOWN = 60
+MAX_WAIT_SECONDS_BEFORE_SHUTDOWN = 3
 
 
 def parse_config():
@@ -55,6 +56,7 @@ def sig_handler(server, sig, frame):
     def shutdown():
         logger.info('Stopping http server')
         server.stop()
+        ModelHandler.close_all_jobs()
         logger.info('Will shutdown in %s seconds ...',
                     MAX_WAIT_SECONDS_BEFORE_SHUTDOWN)
         stop_loop(time.time() + MAX_WAIT_SECONDS_BEFORE_SHUTDOWN)
@@ -81,8 +83,9 @@ def main():
                 .format(port=options.port))
     server.listen(options.port)
 
-    signal.signal(signal.SIGTERM, partial(sig_handler, server))
-    signal.signal(signal.SIGINT, partial(sig_handler, server))
+    for sig in ('TERM', 'HUP', 'INT'):
+        signal.signal(getattr(signal, 'SIG' + sig),
+                      partial(sig_handler, server))
 
     tornado.ioloop.IOLoop.current().start()
 

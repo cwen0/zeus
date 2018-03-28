@@ -2,7 +2,7 @@
 
 from datasource import PrometheusAPI, PrometheusQuery, Metrics
 from sklearn.ensemble import IsolationForest
-from libs.log import logger
+from threading import Event
 import time
 import numpy as np
 import pandas as pd
@@ -10,6 +10,7 @@ import datetime
 import random
 from model import Model
 from util import sub_id
+from libs.log import logger
 
 
 class IForest(Model):
@@ -20,6 +21,7 @@ class IForest(Model):
         self.df = pd.DataFrame(columns=["mean", "std"])
         self.ilf = IsolationForest(n_estimators=100,
                                    n_jobs=-1, verbose=2)
+        self.event = Event()
         # TODO: make them configurable.
         self.train_count = 120
         self.train_interval = 60
@@ -50,7 +52,7 @@ class IForest(Model):
                 logger.info("[job-id:{id}] append data to train df:{df_one}"
                             .format(id=sub_id(self.job.id), df_one=df_one))
 
-            time.sleep(self.train_interval)
+            self.event.wait(self.train_interval)
         x_cols = ["mean", "std"]
         logger.info("[job-id:{id}] starting to train sample data"
                     .format(id=sub_id(self.job.id)))
@@ -92,7 +94,7 @@ class IForest(Model):
                                       time=self.predict_interval),
                               job.slack_channel)
 
-            time.sleep(self.predict_interval)
+            self.event.wait(self.predict_interval)
         logger.info("[job-id:{id}] stop job"
                     .format(id=sub_id(self.job.id)))
 
@@ -122,6 +124,7 @@ class IForest(Model):
         logger.info("[job-id:{id}] closing the job"
                     .format(id=sub_id(self.job.id)))
         self.__exit = True
+        self.event.set()
 
 
 

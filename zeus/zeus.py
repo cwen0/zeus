@@ -41,7 +41,8 @@ class ModelHandler(tornado.web.RequestHandler):
         runner.run()
         return True
 
-    def close_job(self, job_id):
+    @staticmethod
+    def close_job(job_id):
         if job_id not in runners:
             raise ValueError("job:{job_id} is not running"
                              .format(job_id=job_id))
@@ -53,7 +54,8 @@ class ModelHandler(tornado.web.RequestHandler):
         del runners[job_id]
         lock.release()
 
-    def list_jobs(self):
+    @staticmethod
+    def list_jobs():
         lock.acquire()
         jobs = []
         for job_id, runner in runners.items():
@@ -62,7 +64,15 @@ class ModelHandler(tornado.web.RequestHandler):
         lock.release()
         return jobs
 
-    def detail_job(self, job_id):
+    @staticmethod
+    def close_all_jobs():
+        lock.acquire()
+        for runner in runners.values():
+            runner.close()
+        lock.release()
+
+    @staticmethod
+    def detail_job(job_id):
         if job_id not in runners:
             raise ValueError("job:{job_id} is not running"
                              .format(job_id=job_id))
