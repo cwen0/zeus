@@ -1,6 +1,0 @@
-#!/usr/bin/env python
-
-import zeus
-
-if __name__ == '__main__':
-    zeus.main()

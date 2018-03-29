@@ -1,7 +1,0 @@
-scikit-learn
-prometheus
-numpy
-pandas
-requests
-tornado
-slackclient
