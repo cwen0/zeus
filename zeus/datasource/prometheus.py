@@ -1,7 +1,11 @@
+# -*- coding: utf-8 -*-
+
+from __future__ import absolute_import
+
 import logging
 import requests
 import csv
-from data_model import DataModel
+from zeus.datasource.data_model import DataModel
 
 # Create a metric to track time spent and requests made.
 # REQUEST_TIME = Summary('request_processing_seconds', 'Time spent processing request')

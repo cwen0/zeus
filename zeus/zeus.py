@@ -1,13 +1,17 @@
 # -*- coding: utf-8 -*-
-import tornado.gen
-import tornado.web
+
+from __future__ import absolute_import, division, print_function
+
 import uuid
 import threading
-from libs import alert
-from libs.log import logger
 import json
-import models
 from concurrent.futures import ThreadPoolExecutor
+import tornado.gen
+import tornado.web
+from zeus.models import models
+from zeus.libs.alert import send_to_slack, DEFAULT_CHANNEL
+from zeus.libs.log import logger
+from zeus.job import Job, DEFAULT_JOB_TIMEOUT
 
 HTTP_MISS_ARGS = 401
 HTTP_FAIL = 403
@@ -22,13 +26,13 @@ class ModelHandler(tornado.web.RequestHandler):
 
     @tornado.gen.coroutine
     def run(self, job):
-        if job.model not in models.models:
+        if job.model not in models:
             raise ValueError("model:{model} is not supported"
                              .format(model=job.model))
             # raise ModelNotSupportException(model_name=job.model)
 
-        model = models.models[job.model]
-        runner = model(job, alert.send_to_slack)
+        model = models[job.model]
+        runner = model(job, send_to_slack)
         lock.acquire()
         runners[job.id] = runner
         lock.release()
@@ -91,13 +95,16 @@ class JobNewHandler(ModelHandler):
         data = json.loads(self.request.body)
         print(data)
         try:
-            slack_channel = alert.DEFAULT_CHANNEL
+            slack_channel = DEFAULT_CHANNEL
             if "slack_channel" in data:
                 slack_channel = data["slack_channel"]
 
-            job = models.Job(str(uuid.uuid4()), data["data_source"],
-               data["model"], data["metrics"], slack_channel)
-            # job = models.Job(data)
+            timeout = DEFAULT_JOB_TIMEOUT
+            if "timeout" in data:
+                timeout = data["timeout"]
+
+            job = Job(str(uuid.uuid4()), data["data_source"],
+                      data["model"], data["metrics"], slack_channel, timeout)
         except KeyError as e:
             self.finish({"code": HTTP_MISS_ARGS,
                          "message": "miss args %s" % e.args[0]})

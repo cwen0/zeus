@@ -1,16 +1,19 @@
 # -*- coding: utf-8 -*-
 
-from datasource import PrometheusAPI, PrometheusQuery, Metrics
-from sklearn.ensemble import IsolationForest
-from threading import Event
+from __future__ import absolute_import, division, print_function
+
 import time
 import numpy as np
 import pandas as pd
 import datetime
 import random
-from model import Model
-from util import sub_id
-from libs.log import logger
+from zeus.datasource import PrometheusAPI, PrometheusQuery, Metrics
+from sklearn.ensemble import IsolationForest
+from threading import Event, Lock, Timer
+from pytimeparse.timeparse import timeparse
+from zeus.models.model import Model
+from zeus.models.util import sub_id
+from zeus.libs.log import logger
 
 
 class IForest(Model):
@@ -21,12 +24,15 @@ class IForest(Model):
         self.df = pd.DataFrame(columns=["mean", "std"])
         self.ilf = IsolationForest(n_estimators=100,
                                    n_jobs=-1, verbose=2)
-        self.event = Event()
         # TODO: make them configurable.
         self.train_count = 120
         self.train_interval = 60
         self.predict_interval = 120
+
+        self.event = Event()
+        self.lock = Lock()
         self.__exit = False
+        self.timer = Timer(timeparse(self.job.timeout), self.timeout_action)
 
     def train(self, query_expr):
         logger.info("[job-id:{id}] starting to get sample data"
@@ -113,6 +119,7 @@ class IForest(Model):
         return self.ilf.predict(predict_data)
 
     def run(self):
+        self.timer.start()
         for key in self.job.metrics:
             if key in Metrics:
                 val = Metrics[key]
@@ -121,10 +128,23 @@ class IForest(Model):
 
     def close(self):
         # TODO: close this job
-        logger.info("[job-id:{id}] closing the job"
-                    .format(id=sub_id(self.job.id)))
-        self.__exit = True
-        self.event.set()
+        with self.lock:
+            logger.info("[job-id:{id}] closing the job"
+                        .format(id=sub_id(self.job.id)))
+            self.__exit = True
+            self.event.set()
+
+            self.timer.cancel()
+
+    def timeout_action(self):
+        # TODO: do some clean action after timeout
+        with self.lock:
+            logger.info("[job-id:{id}] finish the job"
+                        .format(id=sub_id(self.job.id)))
+            self.__exit = True
+            self.event.set()
+
+
 
 
 

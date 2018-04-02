@@ -1,16 +1,18 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import absolute_import
+
+import sys
+import time
+from functools import partial
 from tornado.options import define, options
 import tornado.web
 import tornado.httpserver
 import tornado.ioloop
-from libs.log import logger
-from libs import alert
-import sys
-import time
-from functools import partial
 import signal
-from zeus import (
+from zeus.libs.log import logger
+from zeus.libs import alert
+from zeus.zeus import (
     JobNewHandler,
     JobDeleteHandler,
     JobListHandler,

@@ -6,7 +6,8 @@ json_data='''
         "url": "http://40.125.162.12:38175"
     },
     "model": "iForest",
-    "metrics": ["qps"]
+    "metrics": ["qps"],
+    "timeout": "3m"
 }
 '''
 

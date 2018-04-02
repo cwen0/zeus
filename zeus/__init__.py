@@ -1,22 +1,27 @@
 # -*- coding: utf-8 -*-
-from .datasource import (
-    DataSource,
-    DataModel,
-)
+# from zeus.datasource import (
+#     DataSource,
+#     DataModel,
+# )
+#
+# from zeus.models import (
+#     IForest,
+#     Model,
+#     Job,
+#     models,
+# )
+#
+from __future__ import absolute_import
 
-from .models import (
-    IForest,
-    Model,
-    Job,
-    models,
-)
-
-from .app import (
+from zeus.app import (
     parse_config,
     main,
 )
 
-from .libs.log import logger
+import zeus.libs
+
+# from zeus.libs.log import logger
+
 
 
 

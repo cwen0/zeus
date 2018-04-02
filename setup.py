@@ -22,5 +22,6 @@ setup(
         'requests',
         'tornado',
         'slackclient',
+        "pytimeparse"
     ],
 )

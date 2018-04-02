@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+from __future__ import absolute_import, division, print_function
+
 import logging
 import sys
 from tornado.log import gen_log, access_log, app_log

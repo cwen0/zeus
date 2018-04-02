@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
-from libs.log import logger
+
+from __future__ import absolute_import
+
+from zeus.libs.log import logger
 
 
 class DataModel(object):

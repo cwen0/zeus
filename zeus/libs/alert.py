@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
+
+from __future__ import absolute_import, division, print_function
+
 from slackclient import SlackClient
-from log import logger
+from zeus.libs.log import logger
 
 
 DEFAULT_CHANNEL = "#schordinger-alert"
@@ -15,7 +18,8 @@ def send_to_slack(message, channel=DEFAULT_CHANNEL):
             "chat.postMessage",
             channel=channel,
             text=message,
-            username="metrics_bot"
+            username="metrics_bot",
+            timeout="3s",
         )
     except Exception as e:
         logger.error("send message:{message} to slack channel:{channel} failed, error:{error}"
