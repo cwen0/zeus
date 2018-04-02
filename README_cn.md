@@ -23,7 +23,7 @@ curl -H "Content-Type: application/json" \
 http://127.0.0.1:2333/api/v1/job/new
 ```
 
-支持的 models: iForest 
+支持的 models: iForest               
 支持的 metrics: qps / latency / server_is_busy / channel_full 
 
 #### 删除正在运行 Job 
