@@ -11,7 +11,13 @@ from zeus.datasource.data_model import DataModel
 # REQUEST_TIME = Summary('request_processing_seconds', 'Time spent processing request')
 QUERY_API = "/api/v1/query"
 RANGE_QUERY_API = "/api/v1/query_range"
-Metrics = {"qps": "sum(rate(tidb_server_query_total[1m])) by (status)"}
+Metrics = {
+    "qps": "sum(rate(tidb_server_query_total[1m])) "
+           "by (status)",
+    "latency": "histogram_quantile(0.95, sum(rate(tidb_server_handle_query_duration_seconds_bucket[1m])) by (le))",
+    "server_is_busy": "sum(rate(tikv_scheduler_too_busy_total[1m])) by (job)",
+    "channel_full": "sum(rate(tikv_channel_full_total[1m])) by (job)"
+}
 
 
 class PrometheusAPI(DataModel):

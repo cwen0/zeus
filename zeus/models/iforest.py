@@ -22,9 +22,8 @@ class IForest(Model):
         self.job = job
         self.callback = callback
         self.api = PrometheusAPI(job.data_source)
-        self.df = pd.DataFrame(columns=["mean", "std"])
-        self.ilf = IsolationForest(n_estimators=100,
-                                   n_jobs=-1, verbose=2)
+        self.df = dict()
+        self.ilf = dict()
         # TODO: make them configurable.
         self.train_count = 120
         self.train_interval = 60
@@ -35,38 +34,41 @@ class IForest(Model):
         self.__exit = False
         self.timer = Timer(timeparse(self.job.timeout), self.timeout_action)
 
-    def train(self, query_expr):
-        logger.info("[job-id:{id}] starting to get sample data"
-                    .format(id=sub_id(self.job.id)))
+    def train(self, metric, query_expr):
+        logger.info("[job-id:{id}][metric:{metric}] starting to get sample data"
+                    .format(id=sub_id(self.job.id), metric=metric))
+        self.df[metric] = pd.DataFrame(columns=["mean", "std"])
+        self.ilf[metric] = IsolationForest(n_estimators=100,
+                                           n_jobs=-1, verbose=2)
         for index in range(0, self.train_count, 1):
             if self.__exit:
-                logger.info("[job-id:{id}] stop job"
-                            .format(id=sub_id(self.job.id)))
+                logger.info("[job-id:{id}][metric:{metric}] stop"
+                            .format(id=sub_id(self.job.id), metric=metric))
                 return False
 
             now = datetime.datetime.now()
             query = PrometheusQuery(query_expr,
                                     time.mktime((now - datetime.timedelta(minutes=15)).timetuple()),
                                     time.mktime(now.timetuple()), "15s")
-            self.train_task(query)
+            self.train_task(metric, query)
 
             if index % 10 == 0:
                 mean_value = float(random.randint(0, 5000))
                 std_value = float(random.randint(0, 10000))
                 df_one = {"mean": mean_value, "std": std_value}
-                self.df = self.df.append(df_one, ignore_index=True)
+                self.df[metric] = self.df[metric].append(df_one, ignore_index=True)
 
-                logger.info("[job-id:{id}] append data to train df:{df_one}"
-                            .format(id=sub_id(self.job.id), df_one=df_one))
+                logger.info("[job-id:{id}][metric:{metric}] append data to train df:{df_one}"
+                            .format(id=sub_id(self.job.id), metric=metric, df_one=df_one))
 
             self.event.wait(self.train_interval)
         x_cols = ["mean", "std"]
-        logger.info("[job-id:{id}] starting to train sample data"
-                    .format(id=sub_id(self.job.id)))
-        self.ilf.fit(self.df[x_cols])
+        logger.info("[job-id:{id}][metric:{metric}] starting to train sample data"
+                    .format(id=sub_id(self.job.id), metric=metric))
+        self.ilf[metric].fit(self.df[x_cols])
         return True
 
-    def train_task(self, query):
+    def train_task(self, metric, query):
         data_set = self.api.query(query)
         if len(data_set) > 0:
             values = []
@@ -77,35 +79,35 @@ class IForest(Model):
             std_value = np.std(values)
             df_one = {"mean": mean_value, "std": std_value}
 
-            logger.info("[job-id:{id}] append data to train df:{df_one}"
-                        .format(id=sub_id(self.job.id), df_one=df_one))
-            self.df = self.df.append(df_one, ignore_index=True)
+            logger.info("[job-id:{id}][metric:{metric}] append data to train df:{df_one}"
+                        .format(id=sub_id(self.job.id), metric=metric, df_one=df_one))
+            self.df[metric] = self.df[metric].append(df_one, ignore_index=True)
 
-    def predict(self, query_expr):
-        logger.info("[job-id:{id}] starting to predict"
-                    .format(id=sub_id(self.job.id)))
+    def predict(self, metric, query_expr):
+        logger.info("[job-id:{id}][metric:metric}]starting to predict"
+                    .format(id=sub_id(self.job.id), metric=metric))
         while not self.__exit:
             now = datetime.datetime.now()
             query = PrometheusQuery(query_expr,
                                     time.mktime((now - datetime.timedelta(minutes=5)).timetuple()),
                                     time.mktime(now.timetuple()), "15s")
 
-            if self.predict_task(query) == 1:
-                logger.info("[job-id:{id}] predict OK"
-                            .format(id=sub_id(self.job.id)))
+            if self.predict_task(metric, query) == 1:
+                logger.info("[job-id:{id}][metric:{metric}] predict OK"
+                            .format(id=sub_id(self.job.id), metric=metric))
             else:
-                logger.info("[job-id:{id}] Predict Error"
-                            .format(id=sub_id(self.job.id)))
-                self.callback("[job] {job}, predict metrics error in last {time}s"
-                              .format(job=dict(self.job),
+                logger.info("[job-id:{id}][metric:{metric}] Predict Error"
+                            .format(id=sub_id(self.job.id), metric=metric))
+                self.callback("[job] {job}, predict metric {metric} error in last {time}s"
+                              .format(job=dict(self.job), metric=metric,
                                       time=self.predict_interval),
                               self.job.slack_channel)
 
             self.event.wait(self.predict_interval)
-        logger.info("[job-id:{id}] stop job"
-                    .format(id=sub_id(self.job.id)))
+        logger.info("[job-id:{id}][metric:{metric}] stop"
+                    .format(id=sub_id(self.job.id), metric=metric))
 
-    def predict_task(self, query):
+    def predict_task(self, metric, query):
         data_set = self.api.query(query)
         values = []
         for data in data_set.values():
@@ -115,9 +117,10 @@ class IForest(Model):
         std_value = np.std(values)
         predict_data = np.array([[mean_value, std_value]])
 
-        logger.info("[job-id:{id}] predict data:{predict_data}"
-                    .format(id=sub_id(self.job.id), predict_data=predict_data))
-        return self.ilf.predict(predict_data)
+        logger.info("[job-id:{id}][metric:{metric}] predict data:{predict_data}"
+                    .format(id=sub_id(self.job.id),
+                            metric=metric, predict_data=predict_data))
+        return self.ilf[metric].predict(predict_data)
 
     def run(self):
         self.timer.start()
@@ -126,12 +129,12 @@ class IForest(Model):
                 val = Metrics[key]
                 # if self.train(val):
                 #     self.predict(val)
-                t = Thread(target=self.run_action, args=(val,))
+                t = Thread(target=self.run_action, args=(key, val, ))
                 t.start()
 
-    def run_action(self, metric):
-        if self.train(metric):
-            self.predict(metric)
+    def run_action(self, metric, val):
+        if self.train(metric, val):
+            self.predict(metric, val)
 
     def close(self):
         # TODO: close this job
