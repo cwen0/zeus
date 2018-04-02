@@ -7,7 +7,7 @@ json_data='''
     },
     "model": "iForest",
     "metrics": ["qps"],
-    "timeout": "3m"
+    "timeout": "24h"
 }
 '''
 

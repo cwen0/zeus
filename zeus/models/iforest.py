@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import datetime
 import random
+from threading import Thread
 from zeus.datasource import PrometheusAPI, PrometheusQuery, Metrics
 from sklearn.ensemble import IsolationForest
 from threading import Event, Lock, Timer
@@ -27,7 +28,7 @@ class IForest(Model):
         # TODO: make them configurable.
         self.train_count = 120
         self.train_interval = 60
-        self.predict_interval = 120
+        self.predict_interval = 300
 
         self.event = Event()
         self.lock = Lock()
@@ -123,8 +124,14 @@ class IForest(Model):
         for key in self.job.metrics:
             if key in Metrics:
                 val = Metrics[key]
-                if self.train(val):
-                    self.predict(val)
+                # if self.train(val):
+                #     self.predict(val)
+                t = Thread(target=self.run_action, args=(val,))
+                t.start()
+
+    def run_action(self, metric):
+        if self.train(metric):
+            self.predict(metric)
 
     def close(self):
         # TODO: close this job
